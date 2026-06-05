@@ -189,10 +189,6 @@ impl Client {
                 param_type,
             } => match param_type {
                 ParameterType::Query => {
-                    let name = name.strip_prefix("\"").unwrap_or(&name);
-                    let name = name.strip_suffix("\"").unwrap_or(name);
-                    let value = value.strip_prefix("\"").unwrap_or(&value);
-                    let value = value.strip_suffix("\"").unwrap_or(value);
                     Parameter::SimpleParameter {
                         name: name.to_owned(),
                         value: value.to_owned(),
@@ -200,10 +196,6 @@ impl Client {
                     }
                 }
                 ParameterType::Body => {
-                    let name = name.strip_prefix("\"").unwrap_or(&name);
-                    let name = name.strip_suffix("\"").unwrap_or(name);
-                    let value = value.strip_prefix("\"").unwrap_or(&value);
-                    let value = value.strip_suffix("\"").unwrap_or(value);
                     Parameter::SimpleParameter {
                         name: name.to_owned(),
                         value: value.to_owned(),
@@ -368,7 +360,6 @@ impl Client {
      * Requires the target to send headers that only contain visible ascii
      */
     pub fn execute_raw(mut self) -> Result<RawResponse> {
-        // For now: Explicitly passing simple parameters of desired type self.mark_query_parameters();
         let url = self.generate_url();
         let method: reqwest::Method = self.method.clone().into();
         let mut request_builder = self.reqwest_client.request(method.clone(), url);
@@ -436,10 +427,10 @@ impl Client {
                 mut content_handle,
                 ..
             } => {
-                let mut content = String::new();
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
+                let mut content = Vec::new();
                 content_handle.rewind()?;
-                content_handle.read_to_string(&mut content)?;
+                content_handle.read_to_end(&mut content)?;
                 let body_length = content.len();
                 let request_builder = request_builder.body(content);
                 self.headers.append(CONTENT_LENGTH, body_length.into());
@@ -519,8 +510,6 @@ fn construct_multipart(
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
                 content_handle.rewind()?;
                 content_handle.read_to_end(&mut content)?;
-                // let mut content = Vec::new();
-                // let content = content_handle.read_to_end(&mut content);
                 let part = Part::bytes(content).mime_str(&mime_type.to_string())?;
                 form = form.part(name, part);
             }
@@ -850,7 +839,6 @@ mod testing {
                 .request(Method::POST.into(), test_url.parse::<Url>().unwrap());
             request_builder = client.generate_body(request_builder)?;
             let request = request_builder.build()?;
-
             let response = client.reqwest_client.execute(request)?;
             println!("{:?}", response);
             assert_eq!(response.status().as_u16(), 200);

@@ -10,7 +10,7 @@ use serde::Serialize;
 use tempfile::tempfile;
 
 use std::{
-    collections::HashMap, fmt::Debug, fs, io::{Read, Seek, Write}, os::unix::fs::MetadataExt, str::FromStr, sync::MutexGuard, time::Duration
+    collections::HashMap, fmt::Debug, fs, io::{Read, Seek, Write}, str::FromStr, time::Duration
 };
 
 pub use mime::*;
@@ -43,44 +43,6 @@ pub enum Parameter {
         mime_type: Mime,
         content_handle: fs::File,
     },
-}
-
-#[derive(Serialize)]
-pub enum ParameterDTO {
-    SimpleParameterDTO {
-        name: String,
-        value: String,
-        param_type: ParameterType,
-    },
-
-    // Since File is not cloneable, we do not merge simple and complex parameters into an enum
-    // For sending/receiving files
-    ComplexParameterDTO {
-        name: String,
-        //  If no charset is specified, the default is ASCII (US-ASCII) unless overridden by the user agent's settings (https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
-        mime_type: String,
-        value: Vec<u8>,
-    },
-}
-
-impl Into<ParameterDTO> for Parameter {
-    fn into(self) -> ParameterDTO {
-        match self {
-            Parameter::SimpleParameter {
-                name,
-                value,
-                param_type,
-            } => ParameterDTO::SimpleParameterDTO { name, value, param_type },
-            Parameter::ComplexParameter {
-                name,
-                mime_type,
-                mut content_handle,
-            } => {
-                let mut content = Vec::with_capacity(content_handle.metadata().map(|data| data.size()).unwrap_or(0).try_into().unwrap());
-                content_handle.read_to_end(&mut content).expect("This should not fail");
-                ParameterDTO::ComplexParameterDTO { name, mime_type: mime_type.essence_str().to_owned(), value: content }},
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -436,7 +398,7 @@ impl Client {
                 mut content_handle,
                 ..
             } => {
-                let mut content = String::new();
+                let mut content: String = String::new();
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
                 content_handle.rewind()?;
                 content_handle.read_to_string(&mut content)?;

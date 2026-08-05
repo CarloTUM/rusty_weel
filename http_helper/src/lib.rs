@@ -10,7 +10,7 @@ use serde::Serialize;
 use tempfile::tempfile;
 
 use std::{
-    collections::HashMap, fmt::Debug, fs, io::{Read, Seek, Write}, os::unix::fs::MetadataExt, str::FromStr, sync::MutexGuard, time::Duration
+    collections::HashMap, fmt::Debug, fs, io::{Read, Seek, Write}, str::FromStr, time::Duration
 };
 
 pub use mime::*;
@@ -43,44 +43,6 @@ pub enum Parameter {
         mime_type: Mime,
         content_handle: fs::File,
     },
-}
-
-#[derive(Serialize)]
-pub enum ParameterDTO {
-    SimpleParameterDTO {
-        name: String,
-        value: String,
-        param_type: ParameterType,
-    },
-
-    // Since File is not cloneable, we do not merge simple and complex parameters into an enum
-    // For sending/receiving files
-    ComplexParameterDTO {
-        name: String,
-        //  If no charset is specified, the default is ASCII (US-ASCII) unless overridden by the user agent's settings (https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types)
-        mime_type: String,
-        value: Vec<u8>,
-    },
-}
-
-impl Into<ParameterDTO> for Parameter {
-    fn into(self) -> ParameterDTO {
-        match self {
-            Parameter::SimpleParameter {
-                name,
-                value,
-                param_type,
-            } => ParameterDTO::SimpleParameterDTO { name, value, param_type },
-            Parameter::ComplexParameter {
-                name,
-                mime_type,
-                mut content_handle,
-            } => {
-                let mut content = Vec::with_capacity(content_handle.metadata().map(|data| data.size()).unwrap_or(0).try_into().unwrap());
-                content_handle.read_to_end(&mut content).expect("This should not fail");
-                ParameterDTO::ComplexParameterDTO { name, mime_type: mime_type.essence_str().to_owned(), value: content }},
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -189,10 +151,6 @@ impl Client {
                 param_type,
             } => match param_type {
                 ParameterType::Query => {
-                    let name = name.strip_prefix("\"").unwrap_or(&name);
-                    let name = name.strip_suffix("\"").unwrap_or(name);
-                    let value = value.strip_prefix("\"").unwrap_or(&value);
-                    let value = value.strip_suffix("\"").unwrap_or(value);
                     Parameter::SimpleParameter {
                         name: name.to_owned(),
                         value: value.to_owned(),
@@ -200,10 +158,6 @@ impl Client {
                     }
                 }
                 ParameterType::Body => {
-                    let name = name.strip_prefix("\"").unwrap_or(&name);
-                    let name = name.strip_suffix("\"").unwrap_or(name);
-                    let value = value.strip_prefix("\"").unwrap_or(&value);
-                    let value = value.strip_suffix("\"").unwrap_or(value);
                     Parameter::SimpleParameter {
                         name: name.to_owned(),
                         value: value.to_owned(),
@@ -368,14 +322,12 @@ impl Client {
      * Requires the target to send headers that only contain visible ascii
      */
     pub fn execute_raw(mut self) -> Result<RawResponse> {
-        // For now: Explicitly passing simple parameters of desired type self.mark_query_parameters();
         let url = self.generate_url();
         let method: reqwest::Method = self.method.clone().into();
         let mut request_builder = self.reqwest_client.request(method.clone(), url);
         request_builder = self.generate_body(request_builder)?;
         request_builder = self.set_headers(request_builder);
         let request = request_builder.build()?;
-        println!("Content length header: {:?}", request.headers().get(CONTENT_LENGTH));
         let response = self.reqwest_client.execute(request)?;
         Ok(RawResponse {
             headers: response.headers().clone(),
@@ -413,7 +365,6 @@ impl Client {
         parameter: Parameter,
         request_builder: RequestBuilder,
     ) -> Result<RequestBuilder> {
-        println!("Constructing singular body");
         match parameter {
             Parameter::SimpleParameter { name, value, .. } => {
                 let text = if value.len() == 0 {
@@ -438,18 +389,17 @@ impl Client {
                 mut content_handle,
                 ..
             } => {
-                let mut content = String::new();
+                let mut content: String = String::new();
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
+                let mut content = Vec::new();
                 content_handle.rewind()?;
-                content_handle.read_to_string(&mut content)?;
+                content_handle.read_to_end(&mut content)?;
                 let body_length = content.len();
                 let request_builder = request_builder.body(content);
                 self.headers.append(CONTENT_LENGTH, body_length.into());
                 if self.headers.contains_key(CONTENT_TYPE.as_str()) {
-                    println!("Using content type from header: {:?}", self.headers.get(CONTENT_TYPE.as_str()));
                     Ok(request_builder)
                 } else {
-                    println!("Setting content type to: {}", mime_type.to_string());
                     // Only set default header if no header is provided
                     Ok(request_builder.header(CONTENT_TYPE, mime_type.to_string()))
                 }
@@ -523,9 +473,6 @@ fn construct_multipart(
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
                 content_handle.rewind()?;
                 content_handle.read_to_end(&mut content)?;
-                // let mut content = Vec::new();
-                // let content = content_handle.read_to_end(&mut content);
-                println!("Adding parameter with type: {}", mime_type.to_string());
                 let part = Part::bytes(content).mime_str(&mime_type.to_string())?;
                 form = form.part(name, part);
             }
@@ -855,7 +802,6 @@ mod testing {
                 .request(Method::POST.into(), test_url.parse::<Url>().unwrap());
             request_builder = client.generate_body(request_builder)?;
             let request = request_builder.build()?;
-
             let response = client.reqwest_client.execute(request)?;
             println!("{:?}", response);
             assert_eq!(response.status().as_u16(), 200);

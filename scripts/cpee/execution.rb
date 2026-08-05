@@ -253,7 +253,8 @@ module CPEE
         iopts['executionhandlers'] = opts[:executionhandlers]
         iopts['executionhandler'] = hw
         iopts['attributes'] = attributes
-        File.open(File.join(opts[:instances],id.to_s,File::basename(ExecutionHandler::Rust::BACKEND_OPTS)),'w') do |f|
+        instance_dir = File.join(opts[:instances], id.to_s)
+        File.open(File.join(instance_dir, File::basename(ExecutionHandler::Rust::BACKEND_OPTS)),'w') do |f|
           f.write JSON::pretty_generate(iopts)
         end
 
@@ -269,16 +270,16 @@ module CPEE
         positions.each do |k, v|
           pos[k] = {"position" => k, "uuid" => "0", "detail" => v, "handler_passthrough" => CPEE::Persistence::extract_item(id,opts,File.join('positions',k,'@passthrough'))}
         end
-        File.open(File.join(opts[:instances],id.to_s, ExecutionHandler::Rust::BACKEND_CONTEXT),'w') do |f|
+        File.open(File.join(instance_dir, ExecutionHandler::Rust::BACKEND_CONTEXT),'w') do |f|
           f.write JSON::pretty_generate({
             'endpoints' => endpoints,
             'data' => data,
             'search_positions' => pos
           })
         end
-        File.write(File.join(opts[:instances],id.to_s,ExecutionHandler::Rust::BACKEND_INSTANCE),dsl)
+        File.write(File.join(instance_dir, ExecutionHandler::Rust::BACKEND_INSTANCE),dsl)
 
-        system(ExecutionHandler::Rust::BACKEND_COMPILE, File.join(opts[:instances],id.to_s))
+        system(ExecutionHandler::Rust::BACKEND_COMPILE, instance_dir)
       end #}}}
 
       def self::run(id,opts) # {{{

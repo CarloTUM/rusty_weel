@@ -246,8 +246,7 @@ module CPEE
         iopts['instance_id'] = id.to_i
         iopts['host'] = opts[:host]
         iopts['cpee_base_url'] = opts[:url]
-        iopts['redis_url'] = opts[:redis_url]
-        iopts['redis_path'] = 'unix://' + File.join(opts[:basepath],opts[:redis_path])
+        iopts['redis_path'] = opts[:redis_url]
         iopts['redis_db'] = opts[:redis_db]
         iopts['workers'] = opts[:workers]
         iopts['global_executionhandlers'] = opts[:global_executionhandlers]

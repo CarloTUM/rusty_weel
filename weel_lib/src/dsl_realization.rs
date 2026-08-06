@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
-use std::thread::{self, Thread, ThreadId};
+use std::thread::{self, ThreadId};
 use std::time::SystemTime;
 
 use rand::distributions::Alphanumeric;
@@ -617,7 +617,7 @@ impl DSL for Weel {
         let mutex_lock = mutex.lock().unwrap();
         self.execute_lambda(lambda)?;
         drop(mutex_lock);
-        todo!()
+        Ok(())
     }
 
     fn stop(self: Arc<Self>, id: &str) -> Result<()> {
@@ -687,7 +687,7 @@ impl Weel {
      */
     pub fn start(
         self: Arc<Self>,
-        model: Box<(dyn FnOnce() -> Result<()> + Send + 'static)>,
+        model: Box<dyn FnOnce() -> Result<()> + Send + 'static>,
         stop_signal_sender: Sender<()>,
     ) -> Result<()> {
         let content = json!({
@@ -777,7 +777,6 @@ impl Weel {
 
     fn recursive_join(&self, thread: ThreadId) -> Result<()> {
         let children: Vec<ThreadId>;
-        let mut joined_thread = false;
         {
             let thread_map = self.thread_information.lock().unwrap();
             let mut thread_info = thread_map
@@ -795,7 +794,6 @@ impl Weel {
                     match handle.join() {
                         Ok(res) => {
                             res?;
-                            joined_thread = true;
                         }
                         Err(err) => {
                             eprintln!("error when joining thread with id {:?}: {:?}", thread, err)

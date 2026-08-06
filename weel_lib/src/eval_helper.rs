@@ -2,7 +2,7 @@ use core::str;
 use std::{
     collections::HashMap,
     fmt::Display,
-    io::{Read, Seek, Write},
+    io::{Read, Seek},
     sync::Mutex,
     thread,
 };
@@ -11,7 +11,6 @@ use http_helper::{Client, Parameter};
 use mime::{Mime, APPLICATION_JSON, TEXT_PLAIN_UTF_8};
 use reqwest::header::CONTENT_TYPE;
 use serde_json::Value;
-use tempfile::tempfile;
 
 use crate::{
     connection_wrapper::ConnectionWrapper,
@@ -666,7 +665,7 @@ pub fn structurize_result(
                 Parameter::SimpleParameter { value, .. } => serde_json::from_str::<Value>(&value)?,
                 Parameter::ComplexParameter {
                     mut content_handle,
-                    name,
+                    name: _,
                     ..
                 } => {
                     let mut content = String::new();

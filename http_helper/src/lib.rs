@@ -389,7 +389,6 @@ impl Client {
                 mut content_handle,
                 ..
             } => {
-                let mut content: String = String::new();
                 // We read out the content handle, otherwise we could stream in the file read (better) but then it would use transfer-encoding chunked -> currently not supported
                 let mut content = Vec::new();
                 content_handle.rewind()?;

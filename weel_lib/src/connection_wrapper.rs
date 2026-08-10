@@ -11,7 +11,6 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,
-    io::{Read, Seek},
     str::FromStr,
     sync::{Arc, Mutex, Weak},
     thread::{self, sleep, ThreadId},
@@ -753,14 +752,8 @@ impl ConnectionWrapper {
             // Assumption about "gtresult.first.value.read": first is the array method to get the first element
             let body = match content.pop().unwrap() {
                 Parameter::SimpleParameter { value, .. } => value.clone(),
-                Parameter::ComplexParameter {
-                    mut content_handle, ..
-                } => {
-                    let mut body = String::new();
-                    content_handle.rewind()?;
-                    content_handle.read_to_string(&mut body)?;
-                    content_handle.rewind()?;
-                    body
+                Parameter::ComplexParameter { content, .. } => {
+                    std::str::from_utf8(&content)?.to_owned()
                 }
             };
 

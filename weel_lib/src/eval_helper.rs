@@ -2,13 +2,12 @@ use core::str;
 use std::{
     collections::HashMap,
     fmt::Display,
-    sync::Mutex,
     thread,
 };
 
+use http::header::CONTENT_TYPE;
 use http_helper::{Client, Parameter};
 use mime::{Mime, APPLICATION_JSON, TEXT_PLAIN_UTF_8};
-use reqwest::header::CONTENT_TYPE;
 use serde_json::Value;
 
 use crate::{
@@ -16,14 +15,6 @@ use crate::{
     data_types::{CallbackType, Context, Opts, StatusDTO},
     dsl_realization::{Error, Result, Signal},
 };
-
-fn construct_clients(number_clients: u8) -> Vec<Mutex<reqwest::blocking::Client>> {
-    let mut new_pool = Vec::new();
-    for _ in 0..number_clients {
-        new_pool.push(Mutex::new(reqwest::blocking::Client::new()));
-    }
-    new_pool
-}
 
 pub fn test_condition(
     dynamic_context: &Context,

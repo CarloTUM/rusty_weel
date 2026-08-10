@@ -7,7 +7,7 @@ use crate::{
 };
 use core::str;
 use http_helper::{header_map_to_hash_map, Method, Parameter};
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use http::header::{HeaderMap, HeaderName, HeaderValue};
 use serde_json::{json, Value};
 use std::{
     collections::HashMap,

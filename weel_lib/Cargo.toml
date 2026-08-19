@@ -20,7 +20,7 @@ mime = "0.3.17"
 redis = "0.28.0"
 
 # HTTP 
-http_helper = { git = "https://github.com/CarloTUM/Bachelor-Thesis.git", rev = "ee7c18a" }
+http_helper = { git = "https://github.com/CarloTUM/Bachelor-Thesis.git", rev = "bddfb45" }
 http = "1"
 urlencoding = "2.1.3"
 

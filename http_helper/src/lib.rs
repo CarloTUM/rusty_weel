@@ -149,19 +149,26 @@ impl Client {
                 name,
                 value,
                 param_type,
-            } => match param_type {
-                ParameterType::Query => {
-                    Parameter::SimpleParameter {
-                        name: name.to_owned(),
-                        value: value.to_owned(),
-                        param_type,
+            } => {
+                // Strip unnecessary quotation marks
+                let name = name.strip_prefix("\"").unwrap_or(&name);
+                let name = name.strip_suffix("\"").unwrap_or(name);
+                let value = value.strip_prefix("\"").unwrap_or(&value);
+                let value = value.strip_suffix("\"").unwrap_or(value);
+                match param_type {
+                    ParameterType::Query => {
+                        Parameter::SimpleParameter {
+                            name: name.to_owned(),
+                            value: value.to_owned(),
+                            param_type,
+                        }
                     }
-                }
-                ParameterType::Body => {
-                    Parameter::SimpleParameter {
-                        name: name.to_owned(),
-                        value: value.to_owned(),
-                        param_type,
+                    ParameterType::Body => {
+                        Parameter::SimpleParameter {
+                            name: name.to_owned(),
+                            value: value.to_owned(),
+                            param_type,
+                        }
                     }
                 }
             },

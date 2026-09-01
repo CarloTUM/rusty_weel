@@ -21,3 +21,4 @@ ctrlc = {version = "3.4.4", features = ["termination"]}
 [features]
 static-curl = ["weel_lib/static-curl"]
 static-ssl = ["weel_lib/static-ssl"]
+rustls = ["weel_lib/rustls"]

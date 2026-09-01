@@ -44,3 +44,4 @@ rand = "0.8.5"
 [features]
 static-curl = ["http_helper/static-curl"]
 static-ssl = ["http_helper/static-ssl"]
+rustls = ["http_helper/rustls"]
